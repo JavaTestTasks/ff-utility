@@ -10,8 +10,8 @@ import java.util.List;
 public class Arguments {
     private static final Options options;
     private final String[] args;
-    private final List<Option> opts;
-    private final List<String> files;
+    private List<Option> opts;
+    private List<String> files;
 
     static {
         options = new Options();
@@ -24,32 +24,38 @@ public class Arguments {
 
     public Arguments(String[] args) {
         this.args = args;
-        opts = parseArguments();
+        opts = Collections.emptyList();
+        files = Collections.emptyList();
+        parseArguments();
     }
 
-    private List<Option> parseArguments() {
+    private void parseArguments() {
         CommandLineParser parser = new DefaultParser();
+
         try {
             CommandLine cmd = parser.parse(options, args);
-            if (cmd.getArgList().isEmpty()) {
+
+            opts = Arrays.stream(cmd.getOptions()).toList();
+            files = Arrays.stream(cmd.getArgs()).toList();
+
+            if (files.isEmpty()) {
                 System.err.println("Required at least one file");
                 printHelp();
                 System.exit(1);
             }
-            return Arrays.stream(cmd.getOptions()).toList();
+
         } catch (ParseException e) {
             System.err.println(e.getMessage());
+            printHelp();
         }
-
-        return Collections.emptyList();
     }
 
     public List<Option> getOptions() {
         return opts;
     }
 
-    public List<String> getArgs() {
-        return Arrays.stream(args).toList();
+    public List<String> getFileNames() {
+        return files;
     }
 
     private void printHelp() {
