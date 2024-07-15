@@ -3,28 +3,26 @@ package ru.fev;
 import org.apache.commons.cli.*;
 
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Arguments {
     private static final Options options;
     private final String[] args;
-    private List<Option> opts;
+    private Map<String, String> opts;
     private List<String> files;
 
     static {
         options = new Options();
-        options.addOption("a", "add", false, "add to result");
-        options.addOption("f", "full", false, "full statistic");
-        options.addOption("o", "path", true, "path to result");
-        options.addOption("p", "prefix", true, "result name prefix");
-        options.addOption("s", "short", false, "short statistic");
+        options.addOption("a", false, "add to result");
+        options.addOption("f", false, "full statistic");
+        options.addOption("o", true, "path to result");
+        options.addOption("p", true, "result name prefix");
+        options.addOption("s", false, "short statistic");
     }
 
     public Arguments(String[] args) {
         this.args = args;
-        opts = Collections.emptyList();
+        opts = Collections.emptyMap();
         files = Collections.emptyList();
         parseArguments();
     }
@@ -35,7 +33,7 @@ public class Arguments {
         try {
             CommandLine cmd = parser.parse(options, args);
 
-            opts = Arrays.stream(cmd.getOptions()).toList();
+            opts = setOptions(cmd);
             files = Arrays.stream(cmd.getArgs()).toList();
 
             if (files.isEmpty()) {
@@ -50,7 +48,29 @@ public class Arguments {
         }
     }
 
-    public List<Option> getOptions() {
+    private Map<String, String> setOptions(CommandLine cmd) {
+        Map<String, String> options = new HashMap<>();
+
+        if (cmd.hasOption("a")) {
+            options.put("a", "");
+        }
+        if (cmd.hasOption("s")) {
+            options.put("s", "");
+        }
+        if (cmd.hasOption("f")) {
+            options.put("f", "");
+        }
+        if (cmd.hasOption("p")) {
+            options.put("p", cmd.getOptionValue("p"));
+        }
+        if (cmd.hasOption("o")) {
+            options.put("o", cmd.getOptionValue("o"));
+        }
+
+        return options;
+    }
+
+    public Map<String, String> getOptions() {
         return opts;
     }
 
