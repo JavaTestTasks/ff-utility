@@ -9,7 +9,6 @@ public class Filter {
     private static int numOfIntegers;
     private static long maxInt = Long.MIN_VALUE;
     private static long minInt = Long.MAX_VALUE;
-    ;
     private static long sumInt = 0;
     private static double avgInt = 0;
 
@@ -70,6 +69,9 @@ public class Filter {
             }
         }
         printStat(arguments);
+        if (arguments.getOptions().containsKey("o")) {
+            moveFiles(arguments);
+        }
     }
 
     private static void printFullIntStat(String intOutName) {
@@ -107,7 +109,7 @@ public class Filter {
         avgInt = (double) sumInt / numOfIntegers;
     }
 
-    private static void updateFloats (float f) {
+    private static void updateFloats(float f) {
         ++numOfFloats;
         minFloat = minFloat == Float.MAX_VALUE ? f : Math.min(f, minFloat);
         maxFloat = maxFloat == Float.MIN_VALUE ? f : Math.max(f, maxFloat);
@@ -176,5 +178,34 @@ public class Filter {
             writer.write(value + "\n");
         }
         writer.close();
+    }
+
+    private static void moveFiles(Arguments arguments) {
+        String add = "/";
+        if (System.getProperty("os.name").contains("Windows")) {
+            add = "\\";
+        }
+
+        Path outputDir = Paths.get(arguments.getOptions().get("o"));
+
+        try {
+            if (Files.notExists(outputDir)) {
+                Files.createDirectory(outputDir);
+            }
+            String toCopy = Paths.get(intOutName).toString();
+            if (Files.exists(Paths.get(intOutName))) {
+                Files.move(Paths.get(intOutName), Paths.get(outputDir + add + toCopy));
+            }
+            toCopy = Paths.get(floatOutName).toString();
+            if (Files.exists(Paths.get(floatOutName))) {
+                Files.move(Paths.get(floatOutName), Paths.get(outputDir + add + toCopy));
+            }
+            toCopy = Paths.get(stringOutName).toString();
+            if (Files.exists(Paths.get(stringOutName))) {
+                Files.move(Paths.get(stringOutName), Paths.get(outputDir + add + toCopy));
+            }
+        } catch (IOException e) {
+            System.err.println("Can not copy result files: " + e.getMessage());
+        }
     }
 }

@@ -37,7 +37,7 @@ public class Arguments {
             files = Arrays.stream(cmd.getArgs()).toList();
 
             if (files.isEmpty()) {
-                System.err.println("Required at least one file");
+                System.err.println("Required at least one file\n");
                 printHelp();
                 System.exit(1);
             }
@@ -82,8 +82,8 @@ public class Arguments {
         HelpFormatter formatter = new HelpFormatter();
         PrintWriter pw = new PrintWriter(System.out);
 
-        pw.println("File filter utility");
-        formatter.printUsage(pw, 100, "java -jar file-filter-formatter.jar [option]... [files]...");
+        pw.println("File filter utility:");
+        formatter.printUsage(pw, 100, "java -jar util.jar [option]... [files]...");
         formatter.printOptions(pw, 100, options, 2, 5);
 
         pw.close();
