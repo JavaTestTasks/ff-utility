@@ -1,18 +1,21 @@
 package ru.fev;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Filter {
     private static int numOfIntegers;
-    private static int maxInt = Integer.MIN_VALUE;
-    private static int minInt = Integer.MAX_VALUE;
+    private static long maxInt = Long.MIN_VALUE;
+    private static long minInt = Long.MAX_VALUE;
     ;
-    private static int sumInt = 0;
+    private static long sumInt = 0;
     private static double avgInt = 0;
 
     private static int numOfFloats;
-    private static float maxFloat = Float.MAX_VALUE;
-    private static float minFloat = Float.MIN_VALUE;
+    private static float maxFloat = Float.MIN_VALUE;
+    private static float minFloat = Float.MAX_VALUE;
     private static float sumFloat = 0;
     private static double avgFloat = 0;
 
@@ -27,68 +30,66 @@ public class Filter {
     private static String floatOutName = FLOAT_OUT;
     private static String stringOutName = STRING_OUT;
 
+    private static boolean startWritingInt = false;
+    private static boolean startWritingFloat = false;
+    private static boolean startWritingString = false;
 
     public static void getFilteredValues(Arguments arguments) {
 
         updateOutNames(arguments);
         boolean append = arguments.getOptions().containsKey("a");
 
-        try (BufferedWriter intWriter = new BufferedWriter(new FileWriter(intOutName, append));
-             BufferedWriter floatWriter = new BufferedWriter(new FileWriter(floatOutName, append));
-             BufferedWriter stringWriter = new BufferedWriter(new FileWriter(stringOutName, append))) {
+        for (String path : arguments.getFileNames()) {
 
-            for (String path : arguments.getFileNames()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
 
-                try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
+                    try {
+                        long t = Long.parseLong(line);
+                        writeLine(append, startWritingInt, intOutName, t);
+                        startWritingInt = true;
+                        updateIntegers(t);
+                    } catch (Exception e) {
 
                         try {
-                            int t = Integer.parseInt(line);
-                            intWriter.write(t + "\n");
-                            updateInts(t);
-                        } catch (Exception e) {
+                            float f = Float.parseFloat(line);
+                            writeLine(append, startWritingFloat, floatOutName, f);
+                            startWritingFloat = true;
+                            updateFloats(f);
+                        } catch (Exception ex) {
 
-                            try {
-                                float f = Float.parseFloat(line);
-                                floatWriter.write(f + "\n");
-                                updateFloats(f);
-                            } catch (Exception ex) {
-                                stringWriter.write(line + "\n");
-                                updateStrings(line);
-                            }
+                            writeLine(append, startWritingString, stringOutName, line);
+                            startWritingString = true;
+                            updateStrings(line);
                         }
                     }
-                } catch (IOException e) {
-                    System.err.println(e.getMessage());
                 }
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
             }
-
-            printStat(arguments);
-
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
         }
+        printStat(arguments);
     }
 
-    private static void printFullIntStat(String intName) {
-        printShortStat(intName, numOfIntegers);
+    private static void printFullIntStat(String intOutName) {
+        printShortStat(intOutName, numOfIntegers);
         System.out.println("Max written value: " + maxInt);
         System.out.println("Min written value: " + minInt);
         System.out.println("Sum of written elements: " + sumInt);
         System.out.println("Average value of written elements: " + avgInt);
     }
 
-    private static void printFullFloatStat(String floatName) {
-        printShortStat(floatName, numOfFloats);
+    private static void printFullFloatStat(String floatOutName) {
+        printShortStat(floatOutName, numOfFloats);
         System.out.println("Max written value: " + maxFloat);
         System.out.println("Min written value: " + minFloat);
         System.out.println("Sum of written elements: " + sumFloat);
         System.out.println("Average value of written elements: " + avgFloat);
     }
 
-    private static void printFullStringStat(String stringName) {
-        printShortStat(stringName, numOfStrings);
+    private static void printFullStringStat(String stringOutName) {
+        printShortStat(stringOutName, numOfStrings);
         System.out.println("The longest string's length: " + maxStringLen);
         System.out.println("The shortest string's length: " + minStringLen);
     }
@@ -98,7 +99,7 @@ public class Filter {
         System.out.println("Written " + numOfElements + " elements.");
     }
 
-    private static void updateInts(int i) {
+    private static void updateIntegers(long i) {
         ++numOfIntegers;
         minInt = minInt == Integer.MAX_VALUE ? i : Math.min(minInt, i);
         maxInt = maxInt == Integer.MIN_VALUE ? i : Math.max(maxInt, i);
@@ -106,7 +107,7 @@ public class Filter {
         avgInt = (double) sumInt / numOfIntegers;
     }
 
-    private static void updateFloats(float f) {
+    private static void updateFloats (float f) {
         ++numOfFloats;
         minFloat = minFloat == Float.MAX_VALUE ? f : Math.min(f, minFloat);
         maxFloat = maxFloat == Float.MIN_VALUE ? f : Math.max(f, maxFloat);
@@ -151,5 +152,29 @@ public class Filter {
             floatOutName = prefix + floatOutName;
             stringOutName = prefix + stringOutName;
         }
+//        if (arguments.getOptions().containsKey("o")) {
+//            String path = arguments.getOptions().get("o");
+//            path += path.charAt(path.length() - 1) == '/' ? "" : '/';
+//            intOutName = path + intOutName;
+//            floatOutName = path + floatOutName;
+//            stringOutName = path + stringOutName;
+//        }
+    }
+
+    private static <T> void writeLine(boolean append,
+                                      boolean startWriting,
+                                      String outName,
+                                      T value) throws IOException {
+        Path outPath = Paths.get(outName);
+        append = append ? append : startWriting;
+        FileWriter writer;
+        if (Files.exists(outPath)) {
+            writer = new FileWriter(outName, append);
+            writer.write(value + "\n");
+        } else {
+            writer = new FileWriter(outName);
+            writer.write(value + "\n");
+        }
+        writer.close();
     }
 }
