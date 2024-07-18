@@ -22,12 +22,9 @@ public class Filter {
     private static int maxStringLen = 0;
     private static int minStringLen = 0;
 
-    private static final String INT_OUT = "integers.txt";
-    private static final String FLOAT_OUT = "floats.txt";
-    private static final String STRING_OUT = "strings.txt";
-    private static String intOutName = INT_OUT;
-    private static String floatOutName = FLOAT_OUT;
-    private static String stringOutName = STRING_OUT;
+    private static String intOutName = "integers.txt";
+    private static String floatOutName = "floats.txt";
+    private static String stringOutName = "strings.txt";
 
     private static boolean startWritingInt = false;
     private static boolean startWritingFloat = false;
@@ -46,19 +43,19 @@ public class Filter {
 
                     try {
                         long t = Long.parseLong(line);
-                        writeLine(append, startWritingInt, intOutName, t);
+                        writeLine(arguments, append, startWritingInt, intOutName, t);
                         startWritingInt = true;
                         updateIntegers(t);
                     } catch (Exception e) {
 
                         try {
                             float f = Float.parseFloat(line);
-                            writeLine(append, startWritingFloat, floatOutName, f);
+                            writeLine(arguments, append, startWritingFloat, floatOutName, f);
                             startWritingFloat = true;
                             updateFloats(f);
                         } catch (Exception ex) {
 
-                            writeLine(append, startWritingString, stringOutName, line);
+                            writeLine(arguments, append, startWritingString, stringOutName, line);
                             startWritingString = true;
                             updateStrings(line);
                         }
@@ -69,25 +66,14 @@ public class Filter {
             }
         }
         printStat(arguments);
-        if (arguments.getOptions().containsKey("o")) {
-            moveFiles(arguments);
-        }
     }
 
-    private static void printFullIntStat(String intOutName) {
-        printShortStat(intOutName, numOfIntegers);
-        System.out.println("Max written value: " + maxInt);
-        System.out.println("Min written value: " + minInt);
-        System.out.println("Sum of written elements: " + sumInt);
-        System.out.println("Average value of written elements: " + avgInt);
-    }
-
-    private static void printFullFloatStat(String floatOutName) {
-        printShortStat(floatOutName, numOfFloats);
-        System.out.println("Max written value: " + maxFloat);
-        System.out.println("Min written value: " + minFloat);
-        System.out.println("Sum of written elements: " + sumFloat);
-        System.out.println("Average value of written elements: " + avgFloat);
+    private static <T> void printFullNumericStat(String name, int numOfElements, T min, T max, T sum, double avg) {
+        printShortStat(name, numOfElements);
+        System.out.println("Max written value: " + max);
+        System.out.println("Min written value: " + min);
+        System.out.println("Sum of written elements: " + sum);
+        System.out.println("Average value of written elements: " + avg);
     }
 
     private static void printFullStringStat(String stringOutName) {
@@ -136,10 +122,10 @@ public class Filter {
             }
         } else if (arguments.getOptions().containsKey("f")) {
             if (numOfIntegers > 0) {
-                printFullIntStat(intOutName);
+                printFullNumericStat(intOutName, numOfIntegers, minInt, maxInt, sumInt, avgInt);
             }
             if (numOfFloats > 0) {
-                printFullFloatStat(floatOutName);
+                printFullNumericStat(floatOutName, numOfFloats, minFloat, maxFloat, sumFloat, avgFloat);
             }
             if (numOfStrings > 0) {
                 printFullStringStat(stringOutName);
@@ -154,19 +140,26 @@ public class Filter {
             floatOutName = prefix + floatOutName;
             stringOutName = prefix + stringOutName;
         }
-//        if (arguments.getOptions().containsKey("o")) {
-//            String path = arguments.getOptions().get("o");
-//            path += path.charAt(path.length() - 1) == '/' ? "" : '/';
-//            intOutName = path + intOutName;
-//            floatOutName = path + floatOutName;
-//            stringOutName = path + stringOutName;
-//        }
     }
 
-    private static <T> void writeLine(boolean append,
+    private static <T> void writeLine(Arguments arguments,
+                                      boolean append,
                                       boolean startWriting,
                                       String outName,
                                       T value) throws IOException {
+
+        if (arguments.getOptions().containsKey("o")) {
+            Path dirPath = Path.of(arguments.getOptions().get("o"));
+            if (Files.notExists(dirPath)) {
+                Files.createDirectory(dirPath);
+            }
+            String add = "/";
+            if (System.getProperty("os.name").contains("Windows")) {
+                add = "\\";
+            }
+            outName = dirPath + add + outName;
+        }
+
         Path outPath = Paths.get(outName);
         append = append ? append : startWriting;
         FileWriter writer;
@@ -178,34 +171,5 @@ public class Filter {
             writer.write(value + "\n");
         }
         writer.close();
-    }
-
-    private static void moveFiles(Arguments arguments) {
-        String add = "/";
-        if (System.getProperty("os.name").contains("Windows")) {
-            add = "\\";
-        }
-
-        Path outputDir = Paths.get(arguments.getOptions().get("o"));
-
-        try {
-            if (Files.notExists(outputDir)) {
-                Files.createDirectory(outputDir);
-            }
-            String toCopy = Paths.get(intOutName).toString();
-            if (Files.exists(Paths.get(intOutName))) {
-                Files.move(Paths.get(intOutName), Paths.get(outputDir + add + toCopy));
-            }
-            toCopy = Paths.get(floatOutName).toString();
-            if (Files.exists(Paths.get(floatOutName))) {
-                Files.move(Paths.get(floatOutName), Paths.get(outputDir + add + toCopy));
-            }
-            toCopy = Paths.get(stringOutName).toString();
-            if (Files.exists(Paths.get(stringOutName))) {
-                Files.move(Paths.get(stringOutName), Paths.get(outputDir + add + toCopy));
-            }
-        } catch (IOException e) {
-            System.err.println("Can not copy result files: " + e.getMessage());
-        }
     }
 }
