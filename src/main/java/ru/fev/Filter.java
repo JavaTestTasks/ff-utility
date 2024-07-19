@@ -83,7 +83,7 @@ public class Filter {
     }
 
     private static void printShortStat(String name, int numOfElements) {
-        System.out.println(name);
+        System.out.println("\n" + name);
         System.out.println("Written " + numOfElements + " elements.");
     }
 
